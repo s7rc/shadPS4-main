@@ -37,7 +37,7 @@ jobs:
       env:
         COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
       run: ./.ci/clang-format.sh
-      
+
   get-info:
     runs-on: ubuntu-24.04
     outputs:
@@ -63,33 +63,41 @@ jobs:
     - uses: actions/checkout@v5
       with:
         submodules: recursive
+        fetch-depth: 0
 
-    - name: Initialize submodules explicitly
+    - name: Force init/update submodules
+      shell: bash
       run: |
         git submodule sync --recursive
         git submodule update --init --force --recursive
 
-    - name: Cache CMake Configuration
-      uses: actions/cache@v4
-      env:
-          cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
-      with:
-          path: | 
-            ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{ env.cache-name }}-
+    # Optional: you can re‑enable this cache later; for now it's safer off to avoid stale externals
+    # - name: Cache CMake Configuration
+    #   uses: actions/cache@v4
+    #   env:
+    #     cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
+    #   with:
+    #     path: ${{ github.workspace }}/build
+    #     key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', '.gitmodules', 'externals/**') }}
+    #     restore-keys: |
+    #       ${{ env.cache-name }}-
 
-    - name: Cache CMake Build
+    - name: Cache CMake Build (ccache)
       uses: hendrikmuhs/ccache-action@v1.2.19
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
+        cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
-        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', '.gitmodules', 'externals/**') }}
 
     - name: Configure CMake
-      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build ^
+        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ^
+        -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON ^
+        -DCMAKE_C_COMPILER=clang-cl ^
+        -DCMAKE_CXX_COMPILER=clang-cl ^
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache ^
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
@@ -114,20 +122,19 @@ jobs:
         xcode-version: latest
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
-      env: 
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
-      with: 
-          path: |  
-            ${{github.workspace}}/build 
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
-          restore-keys: | 
-            ${{ env.cache-name }}- 
+      uses: actions/cache@v4
+      env:
+        cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
+      with:
+        path: ${{github.workspace}}/build
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        restore-keys: |
+          ${{ env.cache-name }}-
 
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.19
       env:
-          cache-name: ${{runner.os}}-sdl-cache-cmake-build
+        cache-name: ${{runner.os}}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         create-symlink: true
@@ -168,20 +175,19 @@ jobs:
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang-19 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
-      env: 
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
-      with: 
-          path: |  
-            ${{github.workspace}}/build 
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
-          restore-keys: | 
-            ${{ env.cache-name }}- 
+      uses: actions/cache@v4
+      env:
+        cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
+      with:
+        path: ${{github.workspace}}/build
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        restore-keys: |
+          ${{ env.cache-name }}-
 
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.19
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
+        cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
@@ -191,7 +197,7 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
-  
+
     - name: Package and Upload Linux(ubuntu64) SDL artifact 
       run: |
         ls -la ${{ github.workspace }}/build/shadps4
@@ -224,20 +230,19 @@ jobs:
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
 
     - name: Cache CMake Configuration
-      uses: actions/cache@v4 
-      env: 
-          cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-configuration
-      with: 
-          path: |  
-            ${{github.workspace}}/build 
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
-          restore-keys: | 
-            ${{ env.cache-name }}- 
+      uses: actions/cache@v4
+      env:
+        cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-configuration
+      with:
+        path: ${{github.workspace}}/build
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        restore-keys: |
+          ${{ env.cache-name }}-
 
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.19
       env:
-          cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
+        cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
@@ -308,7 +313,6 @@ jobs:
           filename=$(basename "$file")
           REPO=""
 
-          # Determine repository based on file name
           if [[ "$filename" == *"win64"* ]]; then
             REPO=$REPO_WINDOWS
           elif [[ "$filename" == *"linux"* ]] || [[ "$filename" == *"ubuntu64"* ]]; then
@@ -317,13 +321,11 @@ jobs:
             REPO=$REPO_MAC
           fi
 
-          # If REPO is empty, skip file
           if [[ -z "$REPO" ]]; then
             echo "No matching repository for $filename"
             continue
           fi
 
-          # Check if release already exists and get ID
           release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/releases/tags/Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.fullhash }}" | jq -r '.id')
 
@@ -342,7 +344,6 @@ jobs:
             echo "Release already exists in $REPO with ID $release_id"
           fi
 
-          # Artifact upload
           echo "Uploading $filename to release $release_id in $REPO"
           upload_url="https://uploads.github.com/repos/$REPO/releases/$release_id/assets?name=$filename"
           curl -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" --data-binary @"$file" "$upload_url"
@@ -353,17 +354,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
       run: |
         api_url="https://api.github.com/repos/${{ github.repository }}/releases"
-        
-        # Get all releases (sorted by date)
         releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
-        
-        # Capture the most recent pre-release (assuming the first one is the latest)
         current_release=$(echo "$releases" | jq -c '.[] | select(.prerelease == true) | .published_at' | sort -r | head -n 1)
-        
-        # Remove extra quotes from captured date
         current_release=$(echo $current_release | tr -d '"')
-                
-        # Export the current published_at to be available for the next step
         echo "CURRENT_PUBLISHED_AT=$current_release" >> $GITHUB_ENV
     
     - name: Delete old pre-releases and tags
@@ -371,34 +364,18 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
       run: |
         api_url="https://api.github.com/repos/${{ github.repository }}/releases"
-        
-        # Get current pre-releases
         releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
-                
-        # Remove extra quotes from captured date
         CURRENT_PUBLISHED_AT=$(echo $CURRENT_PUBLISHED_AT | tr -d '"')
-        
-        # Convert CURRENT_PUBLISHED_AT para timestamp Unix
         current_published_ts=$(date -d "$CURRENT_PUBLISHED_AT" +%s)
-        
-        # Identify pre-releases
         echo "$releases" | jq -c '.[] | select(.prerelease == true)' | while read -r release; do
           release_date=$(echo "$release" | jq -r '.published_at')
           release_id=$(echo "$release" | jq -r '.id')
           release_tag=$(echo "$release" | jq -r '.tag_name')
-          
-          # Remove extra quotes from captured date
           release_date=$(echo $release_date | tr -d '"')
-          
-          # Convert release_date para timestamp Unix
           release_date_ts=$(date -d "$release_date" +%s)
-                    
-          # Compare timestamps and delete old pre-releases
           if [[ "$release_date_ts" -lt "$current_published_ts" ]]; then
             echo "Deleting old pre-release: $release_id from $release_date with tag: $release_tag"
-            # Delete the pre-release
             curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api_url/$release_id"
-            # Delete the tag
             curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$release_tag"
           else
             echo "Skipping pre-release: $release_id (newer or same date)"
