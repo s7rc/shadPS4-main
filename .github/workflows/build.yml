@@ -62,80 +62,37 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    # Fetch externals so CMake can add_subdirectory(ext-boost, fmt, ffmpeg-core, zlib-ng, etc.).
-    - name: Fetch externals
-      uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-boost
-        path: externals/ext-boost
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-fmt
-        path: externals/fmt
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-ffmpeg-core
-        path: externals/ffmpeg-core
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zlib-ng
-        path: externals/zlib-ng
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-glslang
-        path: externals/glslang
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-half
-        path: externals/half
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-magic_enum
-        path: externals/magic_enum
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3
-        path: externals/sdl3
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3_mixer
-        path: externals/sdl3_mixer
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-stb
-        path: externals/stb
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-toml11
-        path: externals/toml11
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-tsl-robin-map
-        path: externals/tsl-robin-map
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vulkan-headers
-        path: externals/Vulkan-Headers
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vma
-        path: externals/VulkanMemoryAllocator
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xbyak
-        path: externals/xbyak
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xxHash
-        path: externals/xxHash
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zydis
-        path: externals/Zydis
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-pugixml
-        path: externals/pugixml
+    - name: Fetch ALL externals in one step
+      shell: bash
+      env:
+        GIT_TERMINAL_PROMPT: 0
+      run: |
+        set -e
+        mkdir -p externals
+        cd externals
+        
+        git clone --depth 1 https://github.com/shadps4-emu/ext-boost.git ext-boost || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-fmt.git fmt || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-ffmpeg-core.git ffmpeg-core || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zlib-ng.git zlib-ng || true
+        git clone --depth 1 https://github.com/KhronosGroup/glslang.git glslang || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-half.git half || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-magic_enum.git magic_enum || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL.git sdl3 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL_mixer.git sdl3_mixer || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-stb.git stb || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-toml11.git toml11 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-robin-map.git tsl-robin-map || true
+        git clone --depth 1 https://github.com/KhronosGroup/Vulkan-Headers.git Vulkan-Headers || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-VulkanMemoryAllocator.git VulkanMemoryAllocator || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xbyak.git xbyak || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xxHash.git xxHash || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zydis.git Zydis || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-pugixml.git pugixml || true
+        
+        cd ..
+        echo "Externals cloned:"
+        ls -la externals/
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4
@@ -144,7 +101,7 @@ jobs:
       with:
           path: | 
             ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }}
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
           restore-keys: |
             ${{ env.cache-name }}-
 
@@ -154,7 +111,7 @@ jobs:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
-        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }}
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
 
     - name: Configure CMake
       run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -174,79 +131,35 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    - name: Fetch externals
-      uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-boost
-        path: externals/ext-boost
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-fmt
-        path: externals/fmt
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-ffmpeg-core
-        path: externals/ffmpeg-core
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zlib-ng
-        path: externals/zlib-ng
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-glslang
-        path: externals/glslang
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-half
-        path: externals/half
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-magic_enum
-        path: externals/magic_enum
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3
-        path: externals/sdl3
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3_mixer
-        path: externals/sdl3_mixer
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-stb
-        path: externals/stb
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-toml11
-        path: externals/toml11
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-tsl-robin-map
-        path: externals/tsl-robin-map
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vulkan-headers
-        path: externals/Vulkan-Headers
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vma
-        path: externals/VulkanMemoryAllocator
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xbyak
-        path: externals/xbyak
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xxHash
-        path: externals/xxHash
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zydis
-        path: externals/Zydis
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-pugixml
-        path: externals/pugixml
+    - name: Fetch ALL externals in one step
+      shell: bash
+      env:
+        GIT_TERMINAL_PROMPT: 0
+      run: |
+        set -e
+        mkdir -p externals
+        cd externals
+        
+        git clone --depth 1 https://github.com/shadps4-emu/ext-boost.git ext-boost || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-fmt.git fmt || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-ffmpeg-core.git ffmpeg-core || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zlib-ng.git zlib-ng || true
+        git clone --depth 1 https://github.com/KhronosGroup/glslang.git glslang || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-half.git half || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-magic_enum.git magic_enum || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL.git sdl3 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL_mixer.git sdl3_mixer || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-stb.git stb || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-toml11.git toml11 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-robin-map.git tsl-robin-map || true
+        git clone --depth 1 https://github.com/KhronosGroup/Vulkan-Headers.git Vulkan-Headers || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-VulkanMemoryAllocator.git VulkanMemoryAllocator || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xbyak.git xbyak || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xxHash.git xxHash || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zydis.git Zydis || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-pugixml.git pugixml || true
+        
+        cd ..
 
     - name: Setup latest Xcode
       uses: maxim-lobanov/setup-xcode@v1
@@ -260,7 +173,7 @@ jobs:
       with: 
           path: |  
             ${{github.workspace}}/build 
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }} 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
           restore-keys: |
             ${{ env.cache-name }}- 
 
@@ -271,7 +184,7 @@ jobs:
       with:
         append-timestamp: false
         create-symlink: true
-        key: ${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }}
+        key: ${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
         variant: sccache
 
     - name: Configure CMake
@@ -297,79 +210,35 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    - name: Fetch externals
-      uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-boost
-        path: externals/ext-boost
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-fmt
-        path: externals/fmt
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-ffmpeg-core
-        path: externals/ffmpeg-core
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zlib-ng
-        path: externals/zlib-ng
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-glslang
-        path: externals/glslang
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-half
-        path: externals/half
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-magic_enum
-        path: externals/magic_enum
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3
-        path: externals/sdl3
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3_mixer
-        path: externals/sdl3_mixer
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-stb
-        path: externals/stb
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-toml11
-        path: externals/toml11
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-tsl-robin-map
-        path: externals/tsl-robin-map
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vulkan-headers
-        path: externals/Vulkan-Headers
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vma
-        path: externals/VulkanMemoryAllocator
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xbyak
-        path: externals/xbyak
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xxHash
-        path: externals/xxHash
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zydis
-        path: externals/Zydis
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-pugixml
-        path: externals/pugixml
+    - name: Fetch ALL externals in one step
+      shell: bash
+      env:
+        GIT_TERMINAL_PROMPT: 0
+      run: |
+        set -e
+        mkdir -p externals
+        cd externals
+        
+        git clone --depth 1 https://github.com/shadps4-emu/ext-boost.git ext-boost || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-fmt.git fmt || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-ffmpeg-core.git ffmpeg-core || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zlib-ng.git zlib-ng || true
+        git clone --depth 1 https://github.com/KhronosGroup/glslang.git glslang || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-half.git half || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-magic_enum.git magic_enum || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL.git sdl3 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL_mixer.git sdl3_mixer || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-stb.git stb || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-toml11.git toml11 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-robin-map.git tsl-robin-map || true
+        git clone --depth 1 https://github.com/KhronosGroup/Vulkan-Headers.git Vulkan-Headers || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-VulkanMemoryAllocator.git VulkanMemoryAllocator || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xbyak.git xbyak || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xxHash.git xxHash || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zydis.git Zydis || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-pugixml.git pugixml || true
+        
+        cd ..
 
     - name: Add LLVM repository
       run: |
@@ -386,7 +255,7 @@ jobs:
       with: 
           path: |  
             ${{github.workspace}}/build 
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }} 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
           restore-keys: |
             ${{ env.cache-name }}- 
 
@@ -396,7 +265,7 @@ jobs:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
-        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }}
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
 
     - name: Configure CMake
       run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -430,79 +299,35 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    - name: Fetch externals
-      uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-boost
-        path: externals/ext-boost
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-fmt
-        path: externals/fmt
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-ffmpeg-core
-        path: externals/ffmpeg-core
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zlib-ng
-        path: externals/zlib-ng
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-glslang
-        path: externals/glslang
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-half
-        path: externals/half
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-magic_enum
-        path: externals/magic_enum
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3
-        path: externals/sdl3
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-sdl3_mixer
-        path: externals/sdl3_mixer
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-stb
-        path: externals/stb
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-toml11
-        path: externals/toml11
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-tsl-robin-map
-        path: externals/tsl-robin-map
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vulkan-headers
-        path: externals/Vulkan-Headers
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-vma
-        path: externals/VulkanMemoryAllocator
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xbyak
-        path: externals/xbyak
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-xxHash
-        path: externals/xxHash
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-zydis
-        path: externals/Zydis
-    - uses: actions/checkout@v5
-      with:
-        repository: shadps4-emu/ext-pugixml
-        path: externals/pugixml
+    - name: Fetch ALL externals in one step
+      shell: bash
+      env:
+        GIT_TERMINAL_PROMPT: 0
+      run: |
+        set -e
+        mkdir -p externals
+        cd externals
+        
+        git clone --depth 1 https://github.com/shadps4-emu/ext-boost.git ext-boost || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-fmt.git fmt || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-ffmpeg-core.git ffmpeg-core || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zlib-ng.git zlib-ng || true
+        git clone --depth 1 https://github.com/KhronosGroup/glslang.git glslang || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-half.git half || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-magic_enum.git magic_enum || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL.git sdl3 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-SDL_mixer.git sdl3_mixer || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-stb.git stb || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-toml11.git toml11 || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-robin-map.git tsl-robin-map || true
+        git clone --depth 1 https://github.com/KhronosGroup/Vulkan-Headers.git Vulkan-Headers || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-VulkanMemoryAllocator.git VulkanMemoryAllocator || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xbyak.git xbyak || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-xxHash.git xxHash || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-zydis.git Zydis || true
+        git clone --depth 1 https://github.com/shadps4-emu/ext-pugixml.git pugixml || true
+        
+        cd ..
 
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
@@ -514,7 +339,7 @@ jobs:
       with: 
           path: |  
             ${{github.workspace}}/build 
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }} 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
           restore-keys: |
             ${{ env.cache-name }}- 
 
@@ -524,7 +349,7 @@ jobs:
           cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
         append-timestamp: false
-        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'externals/**') }}
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
 
     - name: Configure CMake
       run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
