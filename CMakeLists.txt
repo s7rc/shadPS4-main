@@ -17,7 +17,9 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Performance optimizations for Release builds
+project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
+
+# Performance optimizations for Release builds - MUST come after project()
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     # Enable Link-Time Optimization (LTO) for better performance
     include(CheckIPOSupported)
@@ -70,8 +72,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
         endif()
     endif()
 endif()
-
-project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
 if(UNIX AND NOT APPLE)
